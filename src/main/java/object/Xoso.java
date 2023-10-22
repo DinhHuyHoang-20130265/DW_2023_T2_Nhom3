@@ -1,22 +1,19 @@
 package object;
 
+import java.io.Serializable;
 import java.sql.Date;
-import java.util.ArrayList;
-import java.util.List;
 
-public class Xoso {
-    private Date fullday;
-    private String dayOfWeek;
+public class Xoso implements Serializable {
+    private Date full_date;
     private String tenGiai;
-    private String tenDai;
+    private String ten_dai;
     private String soTrungThuong;
     private String tenMien;
 
-    public Xoso(Date fullday, String dayOfWeek, String tenGiai, String tenDai, String soTrungThuong, String tenMien) {
-        this.fullday = fullday;
-        this.dayOfWeek = dayOfWeek;
+    public Xoso(Date full_date, String tenGiai, String ten_dai, String soTrungThuong, String tenMien) {
+        this.full_date = full_date;
         this.tenGiai = tenGiai;
-        this.tenDai = tenDai;
+        this.ten_dai = ten_dai;
         this.soTrungThuong = soTrungThuong;
         this.tenMien = tenMien;
     }
@@ -24,57 +21,54 @@ public class Xoso {
     public Xoso() {
     }
 
-    public Date getFullday() {
-        return fullday;
+    public Date getFull_date() {
+        return full_date;
     }
 
-    public String getDayOfWeek() {
-        return dayOfWeek;
+    public void setFull_date(Date full_date) {
+        this.full_date = full_date;
     }
 
     public String getTenGiai() {
         return tenGiai;
     }
 
-    public String getTenDai() {
-        return tenDai;
+    public void setTenGiai(String tenGiai) {
+        this.tenGiai = tenGiai;
+    }
+
+    public String getTen_dai() {
+        return ten_dai;
+    }
+
+    public void setTen_dai(String ten_dai) {
+        this.ten_dai = ten_dai;
     }
 
     public String getSoTrungThuong() {
         return soTrungThuong;
     }
 
-    public String getTenMien() {
-        return tenMien;
-    }
-
-    public void setFullday(Date fullday) {
-        this.fullday = fullday;
-    }
-
-    public void setDayOfWeek(String dayOfWeek) {
-        this.dayOfWeek = dayOfWeek;
-    }
-
-    public void setTenGiai(String tenGiai) {
-        this.tenGiai = tenGiai;
-    }
-
-    public void setTenDai(String tenDai) {
-        this.tenDai = tenDai;
-    }
-
     public void setSoTrungThuong(String soTrungThuong) {
         this.soTrungThuong = soTrungThuong;
+    }
+
+    public String getTenMien() {
+        return tenMien;
     }
 
     public void setTenMien(String tenMien) {
         this.tenMien = tenMien;
     }
 
-
     @Override
     public String toString() {
-        return this.fullday+" "+this.dayOfWeek+" "+this.tenGiai+" "+this.tenDai+" "+this.soTrungThuong+" "+this.tenMien;
+        return "Xoso{" +
+                "full_date=" + full_date +
+                ", tenGiai='" + tenGiai + '\'' +
+                ", ten_dai='" + ten_dai + '\'' +
+                ", soTrungThuong='" + soTrungThuong + '\'' +
+                ", tenMien='" + tenMien + '\'' +
+                '}';
     }
 }

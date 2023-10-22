@@ -11,51 +11,71 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DAO {
-    public List<Xoso> getKQXS(String mien, String ngay) throws SQLException {
-        List<Xoso> listResult=new ArrayList<Xoso>();
-        String query="select full_date, day_of_week,tenGiai, ten_dai, soTrungThuong, tenMien\n" +
-                "from xosomn.ketquaxs_facts join xosomn.mien_dim\n" +
-                "on xosomn.ketquaxs_facts.mien_key=xosomn.mien_dim.mien_key\n" +
-                "join xosomn.ngay_dim\n" +
-                "on xosomn.ketquaxs_facts.ngay_key=xosomn.ngay_dim.ngay_key\n" +
-                "join xosomn.giai_dim\n" +
-                "on xosomn.ketquaxs_facts.giai_key=xosomn.giai_dim.giai_key\n" +
-                "join xosomn.dai_dim\n" +
-                "on xosomn.ketquaxs_facts.dai_key=xosomn.dai_dim.dai_key\n" +
-                "where xosomn.mien_dim.tenMien='mn' and xosomn.ketquaxs_facts.dateExpire=9999 and xosomn.ngay_dim.full_date='2023-10-17'";
 
-        Xoso kQXS=new Xoso();
+    public List<String> getAllMien() {
+        List<String> listResult = new ArrayList<>();
+        String query = "select tenMien\n" +
+                "from mien_dim\n";
         try {
-            Connection connection= new ConnectDB().Connect();
-            PreparedStatement ps=connection.prepareStatement(query);
-            ResultSet rs= ps.executeQuery();
+            Connection connection = ConnectDB.Connect();
+            PreparedStatement ps = connection.prepareStatement(query);
+            ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                kQXS.setFullday(rs.getDate(1));
-                kQXS.setDayOfWeek(rs.getString(2));
-                kQXS.setTenGiai(rs.getString(3));
-                kQXS.setTenDai(rs.getString(4));
-                kQXS.setSoTrungThuong(rs.getString(5));
-                kQXS.setTenMien(rs.getString(6));
-                listResult.add(kQXS);
-                kQXS=new Xoso();
+                listResult.add(rs.getString(1));
             }
             rs.close();
             ps.close();
             connection.close();
-        }catch (Exception e){
+        } catch (Exception ignored) {
 
         }
 
-        return  listResult;
+        return listResult;
+    }
+
+    public List<Xoso> getKQXS(String mien, String ngay) throws SQLException {
+        List<Xoso> listResult = new ArrayList<>();
+        String query = "select ngay_dim.full_date, giai_dim.tenGiai, dai_dim.ten_dai, ketquaxs_facts.soTrungThuong, mien_dim.tenMien \n" +
+                "                 from ketquaxs_facts join mien_dim  \n" +
+                "                 on ketquaxs_facts.mien_key=mien_dim.mien_key  \n" +
+                "                 join ngay_dim  \n" +
+                "                 on ketquaxs_facts.ngay_key=ngay_dim.ngay_key  \n" +
+                "                 join giai_dim\n" +
+                "                 on ketquaxs_facts.giai_key=giai_dim.giai_key  \n" +
+                "                 join dai_dim  \n" +
+                "                 on ketquaxs_facts.dai_key=dai_dim.dai_key  \n" +
+                "                 where mien_dim.tenMien=? and ngay_dim.full_date=?";
+
+        try {
+            Connection connection = ConnectDB.Connect();
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setString(1, mien);
+            ps.setString(2, ngay);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Xoso kQXS = new Xoso();
+                kQXS.setFull_date(rs.getDate(1));
+                kQXS.setTenGiai(rs.getString(2));
+                kQXS.setTen_dai(rs.getString(3));
+                kQXS.setSoTrungThuong(rs.getString(4));
+                kQXS.setTenMien(rs.getString(5));
+                listResult.add(kQXS);
+            }
+            rs.close();
+            ps.close();
+            connection.close();
+        } catch (Exception ignored) {
+
+        }
+
+        return listResult;
     }
 
 
     public static void main(String[] args) throws SQLException {
-        List<Xoso> kq=new DAO().getKQXS("","");
-        for (Xoso xoso :
-                kq) {
-            System.out.println(xoso.toString()+"\n----------------------");
-        }
-
+        List<String> mien = new DAO().getAllMien();
+        System.out.println(mien);
+        List<Xoso> kq = new DAO().getKQXS("mt", "2023-10-22");
+        System.out.println(kq.size());
     }
 }
