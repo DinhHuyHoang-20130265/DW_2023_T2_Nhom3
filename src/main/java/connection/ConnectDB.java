@@ -5,16 +5,19 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class ConnectDB {
-    static String jdbcUrl = "jdbc:mysql://34.126.154.231:3306/warehouse";
+    static String jdbcUrl = "jdbc:mysql://localhost:3306/warehouse";
     static String username = "root";
-    static String password = "1";
+    static String password = "";
     public static Connection connection;
 
     public static Connection Connect() {
         try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
             connection = DriverManager.getConnection(jdbcUrl, username, password);
         } catch (SQLException e) {
             e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
         return connection;
     }

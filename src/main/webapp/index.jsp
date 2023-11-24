@@ -1,6 +1,20 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="java.util.List" %>
+<%@ page import="object.Xoso" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page isELIgnored="false" %>
+
+<%
+    String runServlet = (String) request.getAttribute("runServlet");
+    if (runServlet == null || !runServlet.equals("true")) {
+        request.setAttribute("runServlet", "true");
+        request.getRequestDispatcher("Servelet").include(request, response);
+    }
+%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,29 +26,82 @@
 </head>
 <body>
 <div class="container">
-    <form id="calendar" method="post">
-        <label for="date-select">Ngày: </label><input type="date" value="2023-10-22" id="date-select"
+    <form id="calendar" method="post" action="Servelet">
+        <label for="date-select">Ngày: </label><input type="date" name="date" value="<%=request.getAttribute("ngay")%>"
+                                                      id="date-select"
                                                       style="font-size: 17px">
+        <button type="submit">Chọn ngày</button>
     </form>
     <div class="result">
-        <section id="mn_kqngay_22102023" class="section">
-            <header class="section-header"><h2><a title="Kết quả xổ số Miền Nam - KQXS MN"
-            >Kết quả xổ số Miền Nam - KQXS MN</a>
+        <% HashMap<String, List<Xoso>> allXoso = (HashMap<String, List<Xoso>>) request.getAttribute("kqxs");
+        %>
+        <%
+            if (allXoso == null || allXoso.isEmpty()) {
+        %>
+        <h3 style="justify-content: center; align-items: center;font-size: 30px; color: red">Ngày hiện tại chưa có kết
+            quả xổ số !</h3>
+        <%
+        } else {
+            for (String key : allXoso.keySet()) {
+                List<Xoso> xoso = allXoso.get(key);
+                Map<String, List<Xoso>> groupedMap = new HashMap<>();
+
+                for (Xoso doiTuong : xoso) {
+                    String dai = doiTuong.getTen_dai();
+
+                    if (!groupedMap.containsKey(dai))
+                        groupedMap.put(dai, new ArrayList<>());
+
+                    List<Xoso> doiTuongs = groupedMap.get(dai);
+                    doiTuongs.add(doiTuong);
+                }
+        %>
+        <section class="section">
+            <header class="section-header"><h2><a
+            >Kết quả xổ
+                số <%=(key.equals("mn") ? "Miền Nam - KQXS MN" : (key.equals("mt") ? "Miền Trung - KQXS MT" : " Miền Bắc - KQXS MB"))%>
+            </a>
             </h2>
-                <h3 class="site-link">XSMN 22/10/2023 </h3></header>
+                <h3 class="site-link">Ngày <%=request.getAttribute("ngay")%>
+                </h3></header>
             <div id="mn_kqngay_22102023_kq" class="section-content">
                 <table class="table-result table-xsmn">
                     <thead>
                     <tr>
                         <th class="name-prize">G</th>
-                        <th class="prize-col3"><a title="Xổ số Tiền Giang">Tiền
-                            Giang</a></th>
-                        <th class="prize-col3"><a title="Xổ số Kiên Giang" h>Kiên
-                            Giang</a></th>
-                        <th class="prize-col3"><a title="Xổ số Đà Lạt">Đà Lạt</a></th>
+                        <%
+                            for (String dai : groupedMap.keySet()) {
+                        %>
+                        <th class="prize-col3"><a title="Xổ số <%=dai%>"><%=dai%>
+                        </a></th>
+                        <%
+                            }
+                        %>
                     </tr>
                     </thead>
                     <tbody>
+<%--                    <%--%>
+<%--                        Map<String, List<Xoso>> groupedMap = new HashMap<>();--%>
+
+<%--                        for (String dai : groupedMap.keySet()) {--%>
+
+<%--                            if (!groupedMap.containsKey(dai)) {--%>
+<%--                                groupedMap.put(dai, new ArrayList<>());--%>
+<%--                            }--%>
+
+<%--                            List<Xoso> doiTuongs = groupedMap.get(dai);--%>
+<%--                            doiTuongs.add(doiTuong);--%>
+<%--                        }--%>
+
+<%--                        // In ra danh sách đã được nhóm--%>
+<%--                        for (String dai : groupedMap.keySet()) {--%>
+<%--                            List<Xoso> doiTuongs = groupedMap.get(dai);--%>
+<%--                            System.out.println("Dai: " + dai);--%>
+<%--                            for (Xoso doiTuong : doiTuongs) {--%>
+
+<%--                            }--%>
+<%--                        }--%>
+<%--                    %>--%>
                     <tr>
                         <th>8</th>
                         <td><span id="TG_prize8_item0" class="xs_prize1 color_red">99</span></td>
@@ -123,6 +190,10 @@
                 </table>
             </div>
         </section>
+        <%
+                }
+            }
+        %>
     </div>
 </div>
 </body>

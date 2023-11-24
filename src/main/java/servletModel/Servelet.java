@@ -10,34 +10,53 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
+import java.util.*;
 
-@WebServlet(name = "Home", value = "/")
+@WebServlet(name = "Servelet", value = "/")
 public class Servelet extends HttpServlet {
-    private String message;
 
     public void init() {
-        message = "Hello World! cái khỷ";
     }
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         response.setContentType("text/html");
         DAO dao = new DAO();
-        List<List<Xoso>> list = new ArrayList<>();
-        List<Xoso> l_KQXS_MN;
+        List<String> miens = dao.getAllMien();
+        LocalDate date = LocalDate.now();
+        String dateNow = date.getYear() + "-" + (date.getMonthValue() < 10 ? "0" + date.getMonthValue() : date.getMonthValue()) + "-" + (date.getDayOfMonth() < 10 ? "0" + date.getDayOfMonth() : date.getDayOfMonth());
+        HashMap<String, List<Xoso>> allXoso = new LinkedHashMap<>();
         try {
-            l_KQXS_MN = dao.getKQXS("mn", "2023-10-20");
+            for (String mien : miens) {
+                List<Xoso> xosos = dao.getKQXS(mien, dateNow);
+                if (!xosos.isEmpty()) allXoso.put(mien, xosos);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-        request.setAttribute("kqxsMN", l_KQXS_MN);
+        request.setAttribute("kqxs", allXoso);
+        request.setAttribute("ngay", dateNow);
         request.getRequestDispatcher("index.jsp").forward(request, response);
 
     }
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-
+        String[] date = request.getParameterValues("date");
+        response.setContentType("text/html");
+        DAO dao = new DAO();
+        List<String> miens = dao.getAllMien();
+        HashMap<String, List<Xoso>> allXoso = new LinkedHashMap<>();
+        try {
+            for (String mien : miens) {
+                List<Xoso> xosos = dao.getKQXS(mien, date[0]);
+                if (!xosos.isEmpty()) allXoso.put(mien, xosos);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        request.setAttribute("kqxs", allXoso);
+        request.setAttribute("ngay", date[0]);
+        request.getRequestDispatcher("index.jsp").forward(request, response);
     }
+
 }
