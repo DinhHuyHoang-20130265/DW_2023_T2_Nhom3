@@ -208,5 +208,20 @@ public class Modules {
         }
         DBConnect.insertStatus(connection, id, "TRANSFORMED");
     }
+    public static void LoadToWarehouse(int id, Connection connection) throws SQLException {
+        DBConnect.insertStatus(connection, id, "LOADINGWH");
+        String sql = "CALL insert_facts()";
+        CallableStatement statement = connection.prepareCall(sql);
+        statement.execute();
+        DBConnect.insertStatus(connection, id, "WLOADED");
+    }
+
+    public static void Aggregate(int id, Connection connection) throws SQLException {
+        DBConnect.insertStatus(connection, id, "AGGREGATING");
+        String sql = "CALL Aggregate()";
+        CallableStatement statement = connection.prepareCall(sql);
+        statement.execute();
+        DBConnect.insertStatus(connection, id, "AGGREGATED");
+    }
 
 }
