@@ -223,5 +223,12 @@ public class Modules {
         statement.execute();
         DBConnect.insertStatus(connection, id, "AGGREGATED");
     }
-
+    public static void LoadToDataMart(int id, Connection connection) throws SQLException {
+        DBConnect.insertStatus(connection, id, "MLOADING");
+        String sql = "CALL LoadToMart()";
+        CallableStatement statement = connection.prepareCall(sql);
+        statement.execute();
+        DBConnect.insertStatus(connection, id, "MLOADED");
+        DBConnect.insertStatus(connection, id, "FINISHED");
+    }}
 }
