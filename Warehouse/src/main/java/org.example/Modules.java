@@ -230,5 +230,5 @@ public class Modules {
         statement.execute();
         DBConnect.insertStatus(connection, id, "MLOADED");
         DBConnect.insertStatus(connection, id, "FINISHED");
-    }}
+    }
 }
