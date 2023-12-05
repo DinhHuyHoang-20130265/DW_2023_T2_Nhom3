@@ -85,7 +85,7 @@ public class Modules {
                 extractToStaging(excelFile.getAbsolutePath(), connection);
                 DBConnect.insertStatus(connection, id, "EXTRACTED");
             } else
-                DBConnect.insertStatus(connection, id, "ERROR");
+                DBConnect.insertStatusAndName(connection, id, "Cannot find the file to start Extract", "ERROR");
         } catch (IOException e) {
             e.printStackTrace();
         } catch (SQLException e) {
@@ -189,15 +189,22 @@ public class Modules {
         } catch (IOException e) {
             e.printStackTrace();
             DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: " + e, "ERROR");
+            connection.close();
             Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR CRAWLER", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
         }
     }
 
-    public static void startCrawl(String source_path, String location, int id, Connection connection) {
-        DBConnect.insertStatus(connection, id, "CRAWLING");
-        for (String s : groups)
-            crawl(source_path, location, s, id, connection);
-        DBConnect.insertStatus(connection, id, "CRAWLED");
+    public static void startCrawl(String source_path, String location, int id, Connection connection) throws SQLException {
+        try {
+            DBConnect.insertStatus(connection, id, "CRAWLING");
+            for (String s : groups)
+                crawl(source_path, location, s, id, connection);
+            DBConnect.insertStatus(connection, id, "CRAWLED");
+        } catch (SQLException e) {
+            DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: " + e, "ERROR");
+            connection.close();
+            Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR CRAWLER", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+        }
     }
     public static void Transform(int id, Connection connection) throws SQLException {
         DBConnect.insertStatus(connection, id, "TRANSFORMING");
