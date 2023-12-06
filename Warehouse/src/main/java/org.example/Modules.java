@@ -156,14 +156,21 @@ public class Modules {
             String dateNow = date.getYear() + "-" + (date.getMonthValue() < 10 ? "0" + date.getMonthValue() : date.getMonthValue()) + "-" + (date.getDayOfMonth() < 10 ? "0" + date.getDayOfMonth() : date.getDayOfMonth());
             String substring = group.substring(group.indexOf("/xs") + 3, group.indexOf("/xs") + 5);
             String currentResultDate = (!substring.equals("mb") ? substring + "_kqngay_" : "kqngay_") + (date.getDayOfMonth() < 10 ? "0" + date.getDayOfMonth() : date.getDayOfMonth()) + (date.getMonthValue() < 10 ? "0" + date.getMonthValue() : date.getMonthValue()) + date.getYear() + "_kq";
-            Element table = Objects.requireNonNull(document.getElementById(currentResultDate)).select("#" + currentResultDate + " table:first-child").get(0);
+            Element table = null;
+            try {
+                table = Objects.requireNonNull(document.getElementById(currentResultDate)).select("#" + currentResultDate + " table:first-child").get(0);
+            } catch (Exception e) {
+                e.printStackTrace();
+                DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: " + e, "ERROR");
+                connection.close();
+                Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR CRAWLER", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+            }
             // Element table = document.getElementsByClass("section").get(2).select("table:first-child").get(0);
             int i = 2;
-            if (substring.equals("mb")) {
+            if (substring.equals("mb") && table != null) {
                 String provinceTemp = document.select(".section-header .site-link").get(0).text();
                 String province = provinceTemp.substring(provinceTemp.indexOf("(") + 1, provinceTemp.indexOf(")"));
                 for (int j = 2; j < 10; j++) {
-                    assert table != null;
                     Elements numbers = table.select("tbody tr:nth-child(" + j + ") td:nth-child(" + i + ") span");
                     String prize = "giai" + table.select("tbody tr:nth-child(" + j + ") td:first-child").get(0).text();
                     for (Element number : numbers) {
@@ -172,18 +179,19 @@ public class Modules {
                     }
                 }
             } else {
-                assert table != null;
-                for (Element e : table.select("thead tr th:not(:first-child)")) {
-                    String province = e.text();
-                    for (int j = 1; j < 10; j++) {
-                        String prize = "giai" + table.select("tbody tr:nth-child(" + j + ") th").get(0).text();
-                        Elements numbers = table.select("tbody tr:nth-child(" + j + ") td:nth-child(" + i + ") span");
-                        for (Element number : numbers) {
-                            LotteryResult result = new LotteryResult(substring, province, dateNow, prize, number.text());
-                            saveToFile(result, dateNow, location);
+                if (table != null) {
+                    for (Element e : table.select("thead tr th:not(:first-child)")) {
+                        String province = e.text();
+                        for (int j = 1; j < 10; j++) {
+                            String prize = "giai" + table.select("tbody tr:nth-child(" + j + ") th").get(0).text();
+                            Elements numbers = table.select("tbody tr:nth-child(" + j + ") td:nth-child(" + i + ") span");
+                            for (Element number : numbers) {
+                                LotteryResult result = new LotteryResult(substring, province, dateNow, prize, number.text());
+                                saveToFile(result, dateNow, location);
+                            }
                         }
+                        i++;
                     }
-                    i++;
                 }
             }
         } catch (IOException e) {
