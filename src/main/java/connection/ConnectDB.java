@@ -5,7 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class ConnectDB {
-    static String jdbcUrl = "jdbc:mysql://localhost:3306/warehouse";
+    static String jdbcUrl = "jdbc:mysql://localhost:3306/data_mart";
     static String username = "root";
     static String password = "";
     public static Connection connection;
