@@ -22,7 +22,7 @@ public class DBConnect {
     public static List<DataFilesConfigs> getConfigurationsWithFlagOne(Connection connection) {
         List<DataFilesConfigs> configurations = new ArrayList<>();
 
-        String query = "SELECT id,name,description,source_path,location, flag FROM db_controls.data_files_configs WHERE flag = 1";
+        String query = "SELECT id,name,description,source_path,location, flag, isRun FROM db_controls.data_files_configs WHERE flag = 1";
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(query)) {
 
@@ -33,7 +33,8 @@ public class DBConnect {
                 String source_path = resultSet.getString("source_path");
                 String location = resultSet.getString("location");
                 int flag = resultSet.getInt("flag");
-                configurations.add(new DataFilesConfigs(id, name, description, source_path, location, flag));
+                int isRun = resultSet.getInt("isRun");
+                configurations.add(new DataFilesConfigs(id, name, description, source_path, location, flag, isRun));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -41,6 +42,7 @@ public class DBConnect {
 
         return configurations;
     }
+
 
     public static String getStatus(Connection connection, int idConfig) {
         String status = "";
@@ -88,7 +90,17 @@ public class DBConnect {
         }
     }
 
+    public static void setIsRun(Connection connection, int id, int i) {
+        try (CallableStatement callableStatement = connection.prepareCall("{CALL updateIsRun(?,?)}")) {
+            callableStatement.setInt(1, id);
+            callableStatement.setInt(2, i);
+            callableStatement.execute();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void main(String[] args) {
-        System.out.println(getStatus(getConnection(), 1));
+        setIsRun(getConnection(), 1, 1);
     }
 }

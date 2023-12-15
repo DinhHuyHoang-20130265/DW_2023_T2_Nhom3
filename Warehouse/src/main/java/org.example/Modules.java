@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 
 public class Modules {
     static final String[] groups = {"xo-so-mien-bac/xsmb-p1.html", "xo-so-mien-trung/xsmt-p1.html", "xo-so-mien-nam/xsmn-p1.html"};
+    static final String[] groups_manual = {"xsmn", "xsmt", "xsmb"};
 
     public static void extractToStaging(String pathFile, Connection connection) {
         try (FileInputStream excelFile = new FileInputStream(pathFile); Workbook workbook = new XSSFWorkbook(excelFile)
@@ -75,22 +76,40 @@ public class Modules {
         }
     }
 
-    public static void startExtractToStaging(int id, Connection connection, String location) {
+    public static boolean startExtractToStaging(int id, Connection connection, String location, String run) {
         DBConnect.insertStatus(connection, id, "EXTRACTING");
         try (CallableStatement callableStatement = connection.prepareCall("TRUNCATE staging.ketquaxs_staging")) {
             callableStatement.execute();
-            Optional<File> latestExcelFile = findLatestExcelFile(location);
-            if (latestExcelFile.isPresent()) {
-                File excelFile = latestExcelFile.get();
-                extractToStaging(excelFile.getAbsolutePath(), connection);
-                DBConnect.insertStatus(connection, id, "EXTRACTED");
-            } else
-                DBConnect.insertStatusAndName(connection, id, "Cannot find the file to start Extract", "ERROR");
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            if (run.equals("auto")) {
+                Optional<File> latestExcelFile = findLatestExcelFile(location);
+                if (latestExcelFile.isPresent()) {
+                    File excelFile = latestExcelFile.get();
+                    extractToStaging(excelFile.getAbsolutePath(), connection);
+                    DBConnect.insertStatus(connection, id, "EXTRACTED");
+                } else {
+                    DBConnect.insertStatusAndName(connection, id, "Cannot find the file to start Extract", "ERROR");
+                    Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR Extract", "<h3 style=\"color: red\">" + "Cannot find the file to start Extract" + "</h3>", MailConfig.MAIL_HTML);
+                    return false;
+                }
+            } else {
+                String[] splited = run.split("-");
+                String date = splited[2] + "-" + splited[1] + "-" + splited[0];
+                File excelFile = new File(location + "\\" + date + " XSKT.xlsx");
+                if (excelFile.exists()) {
+                    extractToStaging(excelFile.getAbsolutePath(), connection);
+                    DBConnect.insertStatus(connection, id, "EXTRACTED");
+                } else {
+                    DBConnect.insertStatusAndName(connection, id, "Cannot find the file to start Extract", "ERROR in recrawl date: " + run);
+                    Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR Extract", "<h3 style=\"color: red\">" + "Cannot find the file to start Extract" + "</h3>", MailConfig.MAIL_HTML);
+                    return false;
+                }
+            }
+        } catch (IOException | SQLException e) {
+            DBConnect.insertStatusAndName(connection, id, "Failed to Extract: " + e, "ERROR");
+            Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR Extract", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+            return false;
         }
+        return true;
     }
     public static void saveToFile(LotteryResult lotteryResult, String dateNow, String location) throws IOException {
         try {
@@ -242,14 +261,21 @@ public class Modules {
         return true;
     }
 
-    public static void Transform(int id, Connection connection) throws SQLException {
-        DBConnect.insertStatus(connection, id, "TRANSFORMING");
-        String[] sqls = {"CALL transformStage_mien()", "CALL transformStage_dai()", "CALL transformStage_date()", "CALL transformStage_giai()"};
-        for (String sql : sqls) {
-            CallableStatement statement = connection.prepareCall(sql);
-            statement.execute();
+    public static boolean Transform(int id, Connection connection) throws SQLException {
+        try {
+            DBConnect.insertStatus(connection, id, "TRANSFORMING");
+            String[] sqls = {"CALL transformStage_mien()", "CALL transformStage_dai()", "CALL transformStage_date()", "CALL transformStage_giai()"};
+            for (String sql : sqls) {
+                CallableStatement statement = connection.prepareCall(sql);
+                statement.execute();
+            }
+            DBConnect.insertStatus(connection, id, "TRANSFORMED");
+        } catch (SQLException e) {
+            DBConnect.insertStatusAndName(connection, id, "Failed to Transform: " + e, "ERROR");
+            Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR Transform", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+            return false;
         }
-        DBConnect.insertStatus(connection, id, "TRANSFORMED");
+        return true;
     }
     public static void LoadToWarehouse(int id, Connection connection) throws SQLException {
         DBConnect.insertStatus(connection, id, "LOADINGWH");

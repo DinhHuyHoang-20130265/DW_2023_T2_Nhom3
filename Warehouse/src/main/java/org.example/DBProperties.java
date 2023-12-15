@@ -1,16 +1,21 @@
 package org.example;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
 public class DBProperties {
-    private static Properties prop = new Properties();
+    private static final Properties prop = new Properties();
 
     static {
         try {
-            prop.load(DBProperties.class.getClassLoader().getResourceAsStream("db.properties"));
+            FileInputStream in = new FileInputStream("D:\\config.properties");
+            prop.load(in);
+            in.close();
         } catch (IOException ioException) {
             ioException.printStackTrace();
+            Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR : Cant read the config file", "<h3 style=\"color: red\">" + ioException + "</h3>", MailConfig.MAIL_HTML);
+
         }
     }
 
@@ -30,19 +35,15 @@ public class DBProperties {
         return prop.get("db.password").toString();
     }
 
-    public static String getDbOption() {
-        return prop.get("db.options").toString();
-    }
-
-    public static String getDbName() {
-        return prop.get("db.databaseName").toString();
-    }
-
     public static String getJdbcUrl() {
         return prop.get("db.jdbcUrl").toString();
     }
 
+    public static String getRun() {
+        return prop.get("run").toString();
+    }
+
     public static void main(String[] args) {
-        System.out.println(getDbHost());
+        System.out.println(getRun());
     }
 }
