@@ -148,31 +148,53 @@ public class Modules {
         return new XSSFWorkbook(inputStream);
     }
 
-    public static void crawl(String source_path, String location, String group, int id, Connection connection) {
+    public static boolean crawl(String source_path, String location, String group, int id, Connection connection, String run) throws SQLException {
         try {
             Document document;
-            document = Jsoup.connect(source_path + group).userAgent("Mozilla/5.0").get();
-            LocalDate date = LocalDate.now();
-            String dateNow = date.getYear() + "-" + (date.getMonthValue() < 10 ? "0" + date.getMonthValue() : date.getMonthValue()) + "-" + (date.getDayOfMonth() < 10 ? "0" + date.getDayOfMonth() : date.getDayOfMonth());
+            document = Jsoup.connect(source_path + (run.equals("auto") ? group : group + "-" + run + ".html")).userAgent("Mozilla/5.0").get();
+            String dateNow;
+            String currentResultDate;
             String substring = group.substring(group.indexOf("/xs") + 3, group.indexOf("/xs") + 5);
-            String currentResultDate = (!substring.equals("mb") ? substring + "_kqngay_" : "kqngay_") + (date.getDayOfMonth() < 10 ? "0" + date.getDayOfMonth() : date.getDayOfMonth()) + (date.getMonthValue() < 10 ? "0" + date.getMonthValue() : date.getMonthValue()) + date.getYear() + "_kq";
-            Element table = null;
+            LocalDate date = LocalDate.now();
+            String mien = !substring.equals("mb") ? substring + "_kqngay_" : "kqngay_";
+            if (run.equals("auto")) {
+                dateNow = date.getYear() + "-" + (date.getMonthValue() < 10 ? "0" + date.getMonthValue() : date.getMonthValue()) + "-" + (date.getDayOfMonth() < 10 ? "0" + date.getDayOfMonth() : date.getDayOfMonth());
+                currentResultDate = mien + (date.getDayOfMonth() < 10 ? "0" + date.getDayOfMonth() : date.getDayOfMonth()) + (date.getMonthValue() < 10 ? "0" + date.getMonthValue() : date.getMonthValue()) + date.getYear() + "_kq";
+            } else {
+                String[] splited = run.split("-");
+                dateNow = splited[2] + "-" + splited[1] + "-" + splited[0];
+                currentResultDate = mien + run.replace("-", "") + "_kq";
+            }
+            Element table;
             try {
                 table = Objects.requireNonNull(document.getElementById(currentResultDate)).select("#" + currentResultDate + " table:first-child").get(0);
             } catch (Exception e) {
                 e.printStackTrace();
-                DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: " + e, "ERROR");
-                connection.close();
+                DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: no table to crawl", "ERROR");
                 Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR CRAWLER", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+                return false;
             }
-            // Element table = document.getElementsByClass("section").get(2).select("table:first-child").get(0);
             int i = 2;
             if (substring.equals("mb") && table != null) {
                 String provinceTemp = document.select(".section-header .site-link").get(0).text();
-                String province = provinceTemp.substring(provinceTemp.indexOf("(") + 1, provinceTemp.indexOf(")"));
+                System.out.println(provinceTemp);
+                String province;
+                if (run.equals("auto"))
+                    province = provinceTemp.substring(provinceTemp.indexOf("(") + 1, provinceTemp.indexOf(")"));
+                else {
+                    int lastDigitIndex = -1;
+                    for (int k = provinceTemp.length() - 1; k >= 0; k--) {
+                        char c = provinceTemp.charAt(k);
+                        if (Character.isDigit(c)) {
+                            lastDigitIndex = k;
+                            break;
+                        }
+                    }
+                    province = provinceTemp.substring(lastDigitIndex + 2);
+                }
                 for (int j = 2; j < 10; j++) {
                     Elements numbers = table.select("tbody tr:nth-child(" + j + ") td:nth-child(" + i + ") span");
-                    String prize = "giai" + table.select("tbody tr:nth-child(" + j + ") td:first-child").get(0).text();
+                    String prize = "giai" + (run.equals("auto") ? table.select("tbody tr:nth-child(" + j + ") td:first-child").get(0).text() : table.select("tbody tr:nth-child(" + j + ") th:first-child").get(0).text());
                     for (Element number : numbers) {
                         LotteryResult result = new LotteryResult(substring, province, dateNow, prize, number.text());
                         saveToFile(result, dateNow, location);
@@ -197,23 +219,29 @@ public class Modules {
         } catch (IOException e) {
             e.printStackTrace();
             DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: " + e, "ERROR");
-            connection.close();
             Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR CRAWLER", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+            return false;
         }
+        return true;
     }
 
-    public static void startCrawl(String source_path, String location, int id, Connection connection) throws SQLException {
+    public static boolean startCrawl(String source_path, String location, int id, Connection connection, String run) throws SQLException {
         try {
             DBConnect.insertStatus(connection, id, "CRAWLING");
-            for (String s : groups)
-                crawl(source_path, location, s, id, connection);
+            for (String s : run.equals("auto") ? groups : groups_manual) {
+                boolean check = crawl(source_path, location, s, id, connection, run);
+                if (!check)
+                    return false;
+            }
             DBConnect.insertStatus(connection, id, "CRAWLED");
         } catch (SQLException e) {
             DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: " + e, "ERROR");
-            connection.close();
             Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR CRAWLER", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+            return false;
         }
+        return true;
     }
+
     public static void Transform(int id, Connection connection) throws SQLException {
         DBConnect.insertStatus(connection, id, "TRANSFORMING");
         String[] sqls = {"CALL transformStage_mien()", "CALL transformStage_dai()", "CALL transformStage_date()", "CALL transformStage_giai()"};
@@ -238,12 +266,19 @@ public class Modules {
         statement.execute();
         DBConnect.insertStatus(connection, id, "AGGREGATED");
     }
-    public static void LoadToDataMart(int id, Connection connection) throws SQLException {
-        DBConnect.insertStatus(connection, id, "MLOADING");
-        String sql = "CALL LoadToMart()";
-        CallableStatement statement = connection.prepareCall(sql);
-        statement.execute();
-        DBConnect.insertStatus(connection, id, "MLOADED");
-        DBConnect.insertStatus(connection, id, "FINISHED");
+    public static boolean LoadToDataMart(int id, Connection connection) throws SQLException {
+        try {
+            DBConnect.insertStatus(connection, id, "MLOADING");
+            String sql = "CALL LoadToMart()";
+            CallableStatement statement = connection.prepareCall(sql);
+            statement.execute();
+            DBConnect.insertStatus(connection, id, "MLOADED");
+            DBConnect.insertStatus(connection, id, "FINISHED");
+        } catch (SQLException e) {
+            DBConnect.insertStatusAndName(connection, id, "Failed to LoadToWarehouse: " + e, "ERROR");
+            Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR LoadToWarehouse", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+            return false;
+        }
+        return true;
     }
 }
