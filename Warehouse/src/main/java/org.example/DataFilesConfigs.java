@@ -14,5 +14,6 @@ public class DataFilesConfigs {
     private String source_path;
     private String location;
     private int flag;
+    private int isRun;
 
 }
