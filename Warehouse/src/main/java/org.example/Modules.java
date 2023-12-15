@@ -266,12 +266,19 @@ public class Modules {
         statement.execute();
         DBConnect.insertStatus(connection, id, "AGGREGATED");
     }
-    public static void LoadToDataMart(int id, Connection connection) throws SQLException {
-        DBConnect.insertStatus(connection, id, "MLOADING");
-        String sql = "CALL LoadToMart()";
-        CallableStatement statement = connection.prepareCall(sql);
-        statement.execute();
-        DBConnect.insertStatus(connection, id, "MLOADED");
-        DBConnect.insertStatus(connection, id, "FINISHED");
+    public static boolean LoadToDataMart(int id, Connection connection) throws SQLException {
+        try {
+            DBConnect.insertStatus(connection, id, "MLOADING");
+            String sql = "CALL LoadToMart()";
+            CallableStatement statement = connection.prepareCall(sql);
+            statement.execute();
+            DBConnect.insertStatus(connection, id, "MLOADED");
+            DBConnect.insertStatus(connection, id, "FINISHED");
+        } catch (SQLException e) {
+            DBConnect.insertStatusAndName(connection, id, "Failed to LoadToWarehouse: " + e, "ERROR");
+            Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR LoadToWarehouse", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+            return false;
+        }
+        return true;
     }
 }
