@@ -76,30 +76,44 @@ public class Modules {
         }
     }
 
+    // 9. Extract file -> staging
     public static boolean startExtractToStaging(int id, Connection connection, String location, String run) {
+        // 9.1. Insert vào bảng db_controls.data_files dòng dữ liệu với status = EXTRACTING
         DBConnect.insertStatus(connection, id, "EXTRACTING");
+        // 9.2. Thực hiện truncate bảng staging.ketquaxs_staging
         try (CallableStatement callableStatement = connection.prepareCall("TRUNCATE staging.ketquaxs_staging")) {
             callableStatement.execute();
+            // 9.3. Lấy tham số run kiểm tra
             if (run.equals("auto")) {
+                // 9.4. Tìm đọc file excel có ngày mới nhất với đường dẫn là tham số location/destination
                 Optional<File> latestExcelFile = findLatestExcelFile(location);
                 if (latestExcelFile.isPresent()) {
+                    // 9.5. Insert dữ liệu vào bảng staging.ketquaxs_staging
                     File excelFile = latestExcelFile.get();
                     extractToStaging(excelFile.getAbsolutePath(), connection);
+                    // 9.6. Insert vào bảng db_controls.data_files dòng dữ liệu với status = EXTRACTED
                     DBConnect.insertStatus(connection, id, "EXTRACTED");
                 } else {
+                    // 9.8. Insert vào bảng db_controls.data_files dòng dữ liệu với status = ERROR
                     DBConnect.insertStatusAndName(connection, id, "Cannot find the file to start Extract", "ERROR");
+                    // 9.9. Gửi mail thông báo lỗi
                     Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR Extract", "<h3 style=\"color: red\">" + "Cannot find the file to start Extract" + "</h3>", MailConfig.MAIL_HTML);
                     return false;
                 }
             } else {
+                // 9.4. Tìm đọc file excel có ngày là run với đường dẫn là tham số location/destination
                 String[] splited = run.split("-");
                 String date = splited[2] + "-" + splited[1] + "-" + splited[0];
                 File excelFile = new File(location + "\\" + date + " XSKT.xlsx");
                 if (excelFile.exists()) {
+                    // 9.5. Insert dữ liệu vào bảng staging.ketquaxs_staging
                     extractToStaging(excelFile.getAbsolutePath(), connection);
+                    // 9.6. Insert vào bảng db_controls.data_files dòng dữ liệu với status = EXTRACTED
                     DBConnect.insertStatus(connection, id, "EXTRACTED");
                 } else {
+                    // 9.8. Insert vào bảng db_controls.data_files dòng dữ liệu với status = ERROR
                     DBConnect.insertStatusAndName(connection, id, "Cannot find the file to start Extract", "ERROR in recrawl date: " + run);
+                    // 9.9. Gửi mail thông báo lỗi
                     Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR Extract", "<h3 style=\"color: red\">" + "Cannot find the file to start Extract" + "</h3>", MailConfig.MAIL_HTML);
                     return false;
                 }
@@ -111,6 +125,7 @@ public class Modules {
         }
         return true;
     }
+
     public static void saveToFile(LotteryResult lotteryResult, String dateNow, String location) throws IOException {
         try {
             String excelFilePath = location + "\\" + dateNow + " XSKT.xlsx";
@@ -260,23 +275,29 @@ public class Modules {
         }
         return true;
     }
-
+    // 10. Transform data sang các surrogate keys
     public static boolean Transform(int id, Connection connection) throws SQLException {
         try {
+            // 10.1. Insert vào bảng db_controls.data_files dòng dữ liệu với status = TRANSFORMING
             DBConnect.insertStatus(connection, id, "TRANSFORMING");
-            String[] sqls = {"CALL transformStage_mien()", "CALL transformStage_dai()", "CALL transformStage_date()", "CALL transformStage_giai()"};
+            // 10.2. Gọi procedure Transform
+            String[] sqls = {"CALL transformStage_date()", "CALL transformStage_mien()", "CALL transformStage_dai()", "CALL transformStage_giai()"};
             for (String sql : sqls) {
                 CallableStatement statement = connection.prepareCall(sql);
                 statement.execute();
             }
+            // 10.3. Insert vào bảng db_controls.data_files dòng dữ liệu với status = TRANSFORMED
             DBConnect.insertStatus(connection, id, "TRANSFORMED");
         } catch (SQLException e) {
+            // 10.4. Insert vào bảng db_controls.data_files dòng dữ liệu với status = ERROR
             DBConnect.insertStatusAndName(connection, id, "Failed to Transform: " + e, "ERROR");
+            // 10.5. Gửi mail thông báo lỗi
             Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR Transform", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
             return false;
         }
         return true;
     }
+
     public static boolean LoadToWarehouse(int id, Connection connection) throws SQLException {
         try {
             DBConnect.insertStatus(connection, id, "LOADINGWH");
@@ -306,6 +327,7 @@ public class Modules {
         }
         return true;
     }
+
     public static boolean LoadToDataMart(int id, Connection connection) throws SQLException {
         try {
             DBConnect.insertStatus(connection, id, "MLOADING");
