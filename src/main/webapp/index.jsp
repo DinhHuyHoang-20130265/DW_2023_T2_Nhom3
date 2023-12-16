@@ -1,4 +1,3 @@
-Đinh Huy Hoàng
 <%@ page import="java.util.List" %>
 <%@ page import="object.Xoso" %>
 <%@ page import="java.util.HashMap" %>

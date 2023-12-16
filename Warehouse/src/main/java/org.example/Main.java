@@ -19,8 +19,10 @@ public class Main {
                         case "CRAWLING":
                             if (!Modules.startCrawl(config.getSource_path(), config.getLocation(), config.getId(), connection, DBProperties.getRun()))
                                 break;
+                            // 9. Extract file -> staging
                             if (!Modules.startExtractToStaging(config.getId(), connection, config.getLocation(), DBProperties.getRun()))
                                 break;
+                            // 10. Transform data sang các surrogate keys
                             if (!Modules.Transform(config.getId(), connection))
                                 break;
                             if (!Modules.LoadToWarehouse(config.getId(), connection))
@@ -31,8 +33,10 @@ public class Main {
                                 break;
                             break;
                         case "EXTRACTING":
+                            // 9. Extract file -> staging
                             if (!Modules.startExtractToStaging(config.getId(), connection, config.getLocation(), DBProperties.getRun()))
                                 break;
+                            // 10. Transform data sang các surrogate keys
                             if (!Modules.Transform(config.getId(), connection))
                                 break;
                             if (!Modules.LoadToWarehouse(config.getId(), connection))
@@ -43,6 +47,7 @@ public class Main {
                                 break;
                             break;
                         case "TRANSFORMING":
+                            // 10. Transform data sang các surrogate keys
                             if (!Modules.Transform(config.getId(), connection))
                                 break;
                             if (!Modules.LoadToWarehouse(config.getId(), connection))
