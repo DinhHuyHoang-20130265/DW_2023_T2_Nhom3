@@ -277,20 +277,34 @@ public class Modules {
         }
         return true;
     }
-    public static void LoadToWarehouse(int id, Connection connection) throws SQLException {
-        DBConnect.insertStatus(connection, id, "LOADINGWH");
-        String sql = "CALL insert_facts()";
-        CallableStatement statement = connection.prepareCall(sql);
-        statement.execute();
-        DBConnect.insertStatus(connection, id, "WLOADED");
+    public static boolean LoadToWarehouse(int id, Connection connection) throws SQLException {
+        try {
+            DBConnect.insertStatus(connection, id, "LOADINGWH");
+            String sql = "CALL insert_facts()";
+            CallableStatement statement = connection.prepareCall(sql);
+            statement.execute();
+            DBConnect.insertStatus(connection, id, "WLOADED");
+        } catch (SQLException e) {
+            DBConnect.insertStatusAndName(connection, id, "Failed to LoadToWarehouse: " + e, "ERROR");
+            Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR LoadToWarehouse", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+            return false;
+        }
+        return true;
     }
 
-    public static void Aggregate(int id, Connection connection) throws SQLException {
-        DBConnect.insertStatus(connection, id, "AGGREGATING");
-        String sql = "CALL Aggregate()";
-        CallableStatement statement = connection.prepareCall(sql);
-        statement.execute();
-        DBConnect.insertStatus(connection, id, "AGGREGATED");
+    public static boolean Aggregate(int id, Connection connection) throws SQLException {
+        try {
+            DBConnect.insertStatus(connection, id, "AGGREGATING");
+            String sql = "CALL Aggregate()";
+            CallableStatement statement = connection.prepareCall(sql);
+            statement.execute();
+            DBConnect.insertStatus(connection, id, "AGGREGATED");
+        } catch (SQLException e) {
+            DBConnect.insertStatusAndName(connection, id, "Failed to LoadToWarehouse: " + e, "ERROR");
+            Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR LoadToWarehouse", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+            return false;
+        }
+        return true;
     }
     public static boolean LoadToDataMart(int id, Connection connection) throws SQLException {
         try {
