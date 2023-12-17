@@ -7,6 +7,7 @@ import java.util.Properties;
 public class DBProperties {
     private static final Properties prop = new Properties();
 
+    // 1. Đọc file config.proerties
     static {
         try {
             FileInputStream in = new FileInputStream("D:\\config.properties");
