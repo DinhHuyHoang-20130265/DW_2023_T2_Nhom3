@@ -22,7 +22,7 @@ public class Main {
                     switch (status) {
                         // 7. status=Fisnished, 15. status=Crawling
                         case "FINISHED", "CRAWLING":
-                            // 8. Craw data
+                            // 8. Crawl data
                             if (!Modules.startCrawl(config.getSource_path(), config.getLocation(), config.getId(), connection, DBProperties.getRun()))
                                 break;
                             // 9. Extract file -> staging
