@@ -297,31 +297,41 @@ public class Modules {
         }
         return true;
     }
-
+    // 11. Load data sang warehouse
     public static boolean LoadToWarehouse(int id, Connection connection) throws SQLException {
+        // 11.1. insert db_controls.data_files với status = LOADINGWH
+        DBConnect.insertStatus(connection, id, "LOADINGWH");
         try {
-            DBConnect.insertStatus(connection, id, "LOADINGWH");
+            // 11.2. Gọi procedure sql
             String sql = "CALL insert_facts()";
             CallableStatement statement = connection.prepareCall(sql);
             statement.execute();
+            // 11.3. insert db_controls.data_files với status = WLOADED
             DBConnect.insertStatus(connection, id, "WLOADED");
         } catch (SQLException e) {
+            // 11.4. insert db_controls.data_files vớistatus = ERROR
             DBConnect.insertStatusAndName(connection, id, "Failed to LoadToWarehouse: " + e, "ERROR");
+            // 11.5. Gửi mail thông báo lỗi
             Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR LoadToWarehouse", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
             return false;
         }
         return true;
     }
-
+    // 12. Aggregate data
     public static boolean Aggregate(int id, Connection connection) throws SQLException {
+        // 12.1. insert db_controls.data_files với status = AGGREGATING
+        DBConnect.insertStatus(connection, id, "AGGREGATING");
         try {
-            DBConnect.insertStatus(connection, id, "AGGREGATING");
+            // 12.2. Gọi procedure aggregate
             String sql = "CALL Aggregate()";
             CallableStatement statement = connection.prepareCall(sql);
             statement.execute();
+            // 12.3. insert db_controls.data_files với status = AGGREGATED
             DBConnect.insertStatus(connection, id, "AGGREGATED");
         } catch (SQLException e) {
+            // 12.4. insert db_controls.data_files vớistatus = ERROR
             DBConnect.insertStatusAndName(connection, id, "Failed to LoadToWarehouse: " + e, "ERROR");
+            // 12.5. Gửi mail thông báo lỗi
             Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR LoadToWarehouse", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
             return false;
         }

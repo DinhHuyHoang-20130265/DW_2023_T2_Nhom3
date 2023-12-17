@@ -10,6 +10,7 @@ public class DBConnect {
     public static Connection getConnection() {
         if (connection == null) {
             try {
+                // 2. Đọc file config.properties
                 connection = DriverManager.getConnection(DBProperties.getJdbcUrl(), DBProperties.getUsername(), DBProperties.getPassword());
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -18,7 +19,7 @@ public class DBConnect {
         }
         return connection;
     }
-
+    // 3. Lấy ra dòng có flag = 1
     public static List<DataFilesConfigs> getConfigurationsWithFlagOne(Connection connection) {
         List<DataFilesConfigs> configurations = new ArrayList<>();
 
@@ -46,6 +47,7 @@ public class DBConnect {
 
     public static String getStatus(Connection connection, int idConfig) {
         String status = "";
+        // 4. Lấy 1 dòng join với db_controls.data_files
         String query = "SELECT `status` FROM db_controls.data_files WHERE df_config_id=? AND status not like '%ERROR%' ORDER BY file_timestamp DESC , data_files.id DESC LIMIT 1";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -89,7 +91,7 @@ public class DBConnect {
             throw new RuntimeException(e);
         }
     }
-
+    // 6. Cập nhật isRun = 1
     public static void setIsRun(Connection connection, int id, int i) {
         try (CallableStatement callableStatement = connection.prepareCall("{CALL updateIsRun(?,?)}")) {
             callableStatement.setInt(1, id);
