@@ -125,7 +125,7 @@ public class Modules {
         }
         return true;
     }
-
+    //8.3. Lưu dữ liệu đã trích xuất và xử lý vào file Excel với đường dẫn là location
     public static void saveToFile(LotteryResult lotteryResult, String dateNow, String location) throws IOException {
         try {
             String excelFilePath = location + "\\" + dateNow + " XSKT.xlsx";
@@ -258,18 +258,23 @@ public class Modules {
         }
         return true;
     }
-
+//8.Crawl Data
     public static boolean startCrawl(String source_path, String location, int id, Connection connection, String run) throws SQLException {
+//        8.1. Insert vào bảng db_controls.data_files dòng dữ liệu với status = CRAWLING
         try {
             DBConnect.insertStatus(connection, id, "CRAWLING");
+//             8.2. Trích xuất và xử lý dữ liệu từ trang web thông qua các tham số source_path, run để lấy ngày thực hiện crawl
             for (String s : run.equals("auto") ? groups : groups_manual) {
                 boolean check = crawl(source_path, location, s, id, connection, run);
                 if (!check)
                     return false;
             }
+//          8.4. Insert vào bảng db_controls.data_files dòng dữ liệu với status = CRAWLED
             DBConnect.insertStatus(connection, id, "CRAWLED");
         } catch (SQLException e) {
+//          8.5. Insert vào bảng db_controls.data_files dòng dữ liệu với status = ERROR
             DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: " + e, "ERROR");
+//          8.6. Gửi mail thông báo lỗi
             Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR CRAWLER", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
             return false;
         }
@@ -309,7 +314,7 @@ public class Modules {
             // 11.3. insert db_controls.data_files với status = WLOADED
             DBConnect.insertStatus(connection, id, "WLOADED");
         } catch (SQLException e) {
-            // 11.4. insert db_controls.data_files vớistatus = ERROR
+            // 11.4. insert db_controls.data_files với status = ERROR
             DBConnect.insertStatusAndName(connection, id, "Failed to LoadToWarehouse: " + e, "ERROR");
             // 11.5. Gửi mail thông báo lỗi
             Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR LoadToWarehouse", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
@@ -337,17 +342,23 @@ public class Modules {
         }
         return true;
     }
-
+//13. Load to DataMart
     public static boolean LoadToDataMart(int id, Connection connection) throws SQLException {
+//        13.1. insert db_controls.data_files với status = MLOADING
         try {
             DBConnect.insertStatus(connection, id, "MLOADING");
+//          13.2. Gọi procedure LoadToMart
             String sql = "CALL LoadToMart()";
             CallableStatement statement = connection.prepareCall(sql);
             statement.execute();
+//            13.2.3. insert db_controls.data_files với status = MLOADED
             DBConnect.insertStatus(connection, id, "MLOADED");
+//          13.3.insert db_controls.data_files với status = FINISHED
             DBConnect.insertStatus(connection, id, "FINISHED");
         } catch (SQLException e) {
+//          13.4. insert db_controls.data_files với status = ERROR
             DBConnect.insertStatusAndName(connection, id, "Failed to LoadToWarehouse: " + e, "ERROR");
+//          13.5. Gửi mail thông báo lỗi
             Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR LoadToWarehouse", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
             return false;
         }
