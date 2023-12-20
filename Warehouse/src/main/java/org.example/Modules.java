@@ -260,26 +260,44 @@ public class Modules {
     }
 //8.Crawl Data
     public static boolean startCrawl(String source_path, String location, int id, Connection connection, String run) throws SQLException {
+    String dateNow;
+    LocalDate date = LocalDate.now();
 //        8.1. Insert vào bảng db_controls.data_files dòng dữ liệu với status = CRAWLING
-        try {
-            DBConnect.insertStatus(connection, id, "CRAWLING");
-//             8.2. Trích xuất và xử lý dữ liệu từ trang web thông qua các tham số source_path, run để lấy ngày thực hiện crawl
-            for (String s : run.equals("auto") ? groups : groups_manual) {
-                boolean check = crawl(source_path, location, s, id, connection, run);
-                if (!check)
-                    return false;
-            }
-//          8.4. Insert vào bảng db_controls.data_files dòng dữ liệu với status = CRAWLED
-            DBConnect.insertStatus(connection, id, "CRAWLED");
-        } catch (SQLException e) {
-//          8.5. Insert vào bảng db_controls.data_files dòng dữ liệu với status = ERROR
-            DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: " + e, "ERROR");
-//          8.6. Gửi mail thông báo lỗi
-            Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR CRAWLER", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
-            return false;
+    try {
+        DBConnect.insertStatus(connection, id, "CRAWLING");
+//          8.1.1. run = auto ?
+        if (run.equals("auto")) {
+//              8.1.2. crawlDate = Ngày hiện tại
+            dateNow = date.getYear() + "-" + (date.getMonthValue() < 10 ? "0" + date.getMonthValue() : date.getMonthValue()) + "-" + (date.getDayOfMonth() < 10 ? "0" + date.getDayOfMonth() : date.getDayOfMonth());
+        } else {
+//              8.1.5. crawlDate = run
+            String[] splited = run.split("-");
+            dateNow = splited[2] + "-" + splited[1] + "-" + splited[0];
         }
-        return true;
+        File excelFile = new File(location + "\\" + dateNow + " XSKT.xlsx");
+//          8.1.3. file Excel với location và crawlDate tồn tại ?
+        if (excelFile.exists()) {
+//              8.1.4. Xoá file Excel
+            excelFile.delete();
+            System.out.println("deleted");
+        }
+//          8.2. Trích xuất và xử lý dữ liệu từ trang web thông qua các tham số source_path, run để lấy ngày thực hiện crawl
+        for (String s : run.equals("auto") ? groups : groups_manual) {
+            boolean check = crawl(source_path, location, s, id, connection, run);
+            if (!check)
+                return false;
+        }
+//          8.4. Insert vào bảng db_controls.data_files dòng dữ liệu với status = CRAWLED
+        DBConnect.insertStatus(connection, id, "CRAWLED");
+    } catch (SQLException e) {
+//          8.5. Insert vào bảng db_controls.data_files dòng dữ liệu với status = ERROR
+        DBConnect.insertStatusAndName(connection, id, "Failed to Crawling: " + e, "ERROR");
+//          8.6. Gửi mail thông báo lỗi
+        Mail.getInstance().sendMail("PNTSHOP", "dinh37823@gmail.com", "ERROR CRAWLER", "<h3 style=\"color: red\">" + e + "</h3>", MailConfig.MAIL_HTML);
+        return false;
     }
+    return true;
+}
     // 10. Transform data sang các surrogate keys
     public static boolean Transform(int id, Connection connection) throws SQLException {
         try {
