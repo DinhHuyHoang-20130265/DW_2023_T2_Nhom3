@@ -12,7 +12,7 @@ public class Main {
         try (Connection connection = DBConnect.getConnection()) {
             // 3. Lấy ra dòng có flag = 1
             configs = DBConnect.getConfigurationsWithFlagOne(connection);
-            for (DataFilesConfigs config : configs) { // 4.
+            for (DataFilesConfigs config : configs) {
                 // 3.1 kiểm tra isRun=0
                 if (config.getIsRun() == 0) {
                     // 4. Lấy 1 dòng join với db_controls.data_files và 5. Lấy ra dòng dữ liệu data_files có file_timestamp mới nhất

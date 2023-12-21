@@ -64,6 +64,44 @@ public class DBConnect {
         return status;
     }
 
+    public static String getLatesStatusWithNoIdConfig(Connection connection, int isNewThread) {
+        String status = "";
+        String query = "SELECT `status` FROM db_controls.data_files WHERE status not like '%ERROR%' " + (isNewThread == 0 ? " and status not like '%FINISHED%' " : "") + " ORDER BY file_timestamp DESC , data_files.id DESC LIMIT 1";
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    status = resultSet.getString("status");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return status;
+    }
+
+    public static DataFilesConfigs getConfigHaveLatesStatus(Connection connection) {
+        DataFilesConfigs dataFilesConfigs = null;
+        String query = "SELECT dfs.id, dfs.`name`, dfs.description, dfs.source_path, dfs.location, dfs.flag, dfs.isRun FROM db_controls.data_files df JOIN db_controls.data_files_configs dfs ON dfs.id = df.df_config_id WHERE flag = 1 AND status not like '%ERROR%' ORDER BY file_timestamp DESC , dfs.id DESC LIMIT 1";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("id");
+                String description = resultSet.getString("description");
+                String source_path = resultSet.getString("source_path");
+                String location = resultSet.getString("location");
+                int flag = resultSet.getInt("flag");
+                int isRun = resultSet.getInt("isRun");
+                dataFilesConfigs = new DataFilesConfigs(id, name, description, source_path, location, flag, isRun);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return dataFilesConfigs;
+    }
     public static void switchDatabase(Connection connection, String databaseName) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             String sql = "USE " + databaseName;
